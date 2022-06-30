@@ -31,6 +31,7 @@ GLuint reset = 0;
 GLuint jumppressed = 0;
 GLuint jump = 0;
 GLuint falling = 0;
+GLuint end = 0;
 void key_callback();
 
 int main(int argc, char *argv[]){
@@ -303,12 +304,20 @@ int main(int argc, char *argv[]){
 	 }
       }
       */
-      if(left == 1 && right == 0 && falling == 0){
+      if(left == 1 && right == 0 && falling == 0 && end == 0){
          glm_translate_x(floormodel, 1.0f * deltatime);
 	 glUniform1i(tex0uni, 2);
       }
-      if(right == 1 && left == 0 && falling == 0){
+      if(right == 1 && left == 0 && falling == 0 && end == 0){
          glm_translate_x(floormodel, -1.0f * deltatime);
+	 glUniform1i(tex0uni, 3);
+      }
+      if(left == 1 && right == 0 && falling == 0 && end == 1){
+         glm_translate_x(model, -1.0f * deltatime);
+	 glUniform1i(tex0uni, 2);
+      }
+      if(right == 1 && left == 0 && falling == 0 && end == 1){
+         glm_translate_x(model, 1.0f * deltatime);
 	 glUniform1i(tex0uni, 3);
       }
       if(left == 1 && right == 1){
@@ -317,7 +326,20 @@ int main(int argc, char *argv[]){
       if(right == 0 && left == 0){
          glUniform1i(tex0uni, 0);
       }
-      if(floorposition[0] + 2.0f < -0.05f || floorposition[0] - 2.0f > 0.05f){
+      glm_vec3_copy(model[3], position);
+      glm_vec3_copy(floormodel[3], floorposition);
+      if(floorposition[0] - 2.0f > -0.5f && end == 0){
+         end = 1;
+      }
+      if(position[0] > 0.0f && end == 1){
+         end = 0;
+         glm_translate_x(model, -position[0]);
+      }
+
+      if(floorposition[0] + 2.0f < -0.05f && end == 0 || floorposition[0] - 2.0f > 0.05f && end == 0){
+         falling = 1;
+      }
+      if(position[0] + 0.05f < -0.5f && end == 1 || position[0] - 0.1f > 0.5f && end == 1){
          falling = 1;
       }
       if(falling == 1){
@@ -368,6 +390,7 @@ int main(int argc, char *argv[]){
 	 jump = 0;
 	 jumpacceleration = 1.0f;
 	 falling = 0;
+	 end = 0;
       } 
       glUniformMatrix4fv(modelloc, 1, GL_FALSE, &model[0][0]);
       glBufferData(GL_ARRAY_BUFFER, sizeof(Vertices), Vertices, GL_STATIC_DRAW);
