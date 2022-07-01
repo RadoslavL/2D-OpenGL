@@ -31,7 +31,8 @@ GLuint reset = 0;
 GLuint jumppressed = 0;
 GLuint jump = 0;
 GLuint falling = 0;
-GLuint end = 0;
+GLuint leftend = 0;
+GLuint rightend = 0;
 void key_callback();
 
 int main(int argc, char *argv[]){
@@ -80,6 +81,13 @@ int main(int argc, char *argv[]){
      -2.0f, -0.5f, 0.0f, 0.5f, 1.0f, 0.5f, 0.0f, 1.0f, 0.0f,
       2.0f, -0.5f, 0.0f, 0.5f, 1.0f, 0.5f, 1.0f, 1.0f, 0.0f,
       2.0f, -1.0f, 0.0f, 0.5f, 1.0f, 0.5f, 1.0f, 0.0f, 0.0f
+   };
+
+   float cloud[] = {
+     -0.5f,  0.3f, 0.0f, 0.0f, 0.1f, 0.1f, 0.0f, 0.0f, 1.0f,
+     -0.5f,  0.7f, 0.0f, 0.0f, 0.1f, 0.1f, 0.0f, 1.0f, 1.0f,
+      0.5f,  0.7f, 0.0f, 0.0f, 0.1f, 0.1f, 1.0f, 1.0f, 1.0f,
+      0.5f,  0.3f, 0.0f, 0.0f, 0.1f, 0.1f, 1.0f, 0.0f, 1.0f,
    };
 
    GLuint indices[] = {
@@ -174,6 +182,7 @@ int main(int argc, char *argv[]){
    glUseProgram(ShaderProgram);
    mat4 model = GLM_MAT4_IDENTITY_INIT;
    mat4 floormodel = GLM_MAT4_IDENTITY_INIT;
+   mat4 cloudmodel = GLM_MAT4_IDENTITY_INIT;
    versor rotation = GLM_QUAT_IDENTITY_INIT;
    glm_quat_init(rotation, 0.0f, 0.0f, 0.0f, 1.0f);
    vec3 position;
@@ -209,14 +218,15 @@ int main(int argc, char *argv[]){
    glEnableVertexAttribArray(2);
    glEnableVertexAttribArray(3);
    printf("Enabling buffer successfull\n");
-   int texwidth, texheight, texnum, tex2width, tex2height, tex2num, tex3width, tex3height, tex3num, tex4width, tex4height, tex4num;
+   int texwidth, texheight, texnum, tex2width, tex2height, tex2num, tex3width, tex3height, tex3num, tex4width, tex4height, tex4num, tex5width, tex5height, tex5num;
    stbi_set_flip_vertically_on_load(true);
    unsigned char* bytes = stbi_load("idle2.png", &texwidth, &texheight, &texnum, 0);
    unsigned char* bytes2 = stbi_load("grass.jpg", &tex2width, &tex2height, &tex2num, 0);
    unsigned char* bytes3 = stbi_load("moving_left2.png", &tex3width, &tex3height, &tex3num, 0);
    unsigned char* bytes4 = stbi_load("moving_right2.png", &tex4width, &tex4height, &tex4num, 0);
-   GLuint texture[4];
-   glGenTextures(4, texture);
+   unsigned char* bytes5 = stbi_load("cloud2.png", &tex5width, &tex5height, &tex5num, 0);
+   GLuint texture[5];
+   glGenTextures(5, texture);
    glActiveTexture(GL_TEXTURE0);
    glBindTexture(GL_TEXTURE_2D, texture[0]);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -258,6 +268,16 @@ int main(int argc, char *argv[]){
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, flatcolor);
    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tex4width, tex4height, 0, GL_RGBA, GL_UNSIGNED_BYTE, bytes4);
+   glGenerateMipmap(GL_TEXTURE_2D);
+   glActiveTexture(GL_TEXTURE4);
+   glBindTexture(GL_TEXTURE_2D, texture[4]);
+   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+   glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, flatcolor);
+   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tex5width, tex5height, 0, GL_RGBA, GL_UNSIGNED_BYTE, bytes5);
    glGenerateMipmap(GL_TEXTURE_2D);
    GLuint positionattriblocation = glGetAttribLocation(ShaderProgram, "Position");
    GLuint colorattriblocation = glGetAttribLocation(ShaderProgram, "incolor");
@@ -304,21 +324,29 @@ int main(int argc, char *argv[]){
 	 }
       }
       */
-      if(left == 1 && right == 0 && falling == 0 && end == 0){
+      if(left == 1 && right == 0 && falling == 0 && leftend == 0 && rightend == 0){
          glm_translate_x(floormodel, 1.0f * deltatime);
+	 glm_translate_x(cloudmodel, 1.0f * deltatime);
 	 glUniform1i(tex0uni, 2);
       }
-      if(right == 1 && left == 0 && falling == 0 && end == 0){
+      if(right == 1 && left == 0 && falling == 0 && rightend == 0 && leftend == 0){
          glm_translate_x(floormodel, -1.0f * deltatime);
+	 glm_translate_x(cloudmodel, -1.0f * deltatime);
 	 glUniform1i(tex0uni, 3);
       }
-      if(left == 1 && right == 0 && falling == 0 && end == 1){
+      if(left == 1 && right == 0 && falling == 0 && leftend == 1 || left == 1 && right == 0 && falling == 0 && rightend == 1){
          glm_translate_x(model, -1.0f * deltatime);
 	 glUniform1i(tex0uni, 2);
       }
-      if(right == 1 && left == 0 && falling == 0 && end == 1){
+      if(right == 1 && left == 0 && falling == 0 && rightend == 1 || right == 1 && left == 0 && falling == 0 && leftend == 1){
          glm_translate_x(model, 1.0f * deltatime);
 	 glUniform1i(tex0uni, 3);
+      }
+      if(left == 1 && right == 0 && falling == 1){
+         glUniform1i(tex0uni, 2);
+      }
+      if(right == 1 && left == 0 && falling == 1){
+         glUniform1i(tex0uni, 3);
       }
       if(left == 1 && right == 1){
          glUniform1i(tex0uni, 0);
@@ -328,22 +356,29 @@ int main(int argc, char *argv[]){
       }
       glm_vec3_copy(model[3], position);
       glm_vec3_copy(floormodel[3], floorposition);
-      if(floorposition[0] - 2.0f > -0.5f && end == 0){
-         end = 1;
+      if(floorposition[0] - 2.0f > -0.5f && leftend == 0){
+         leftend = 1;
       }
-      if(position[0] > 0.0f && end == 1){
-         end = 0;
+      if(floorposition[0] + 2.0f < 0.5f && rightend == 0){
+         rightend = 1;
+      }
+      if(position[0] > 0.0f && leftend == 1){
+         leftend = 0;
          glm_translate_x(model, -position[0]);
       }
-
-      if(floorposition[0] + 2.0f < -0.05f && end == 0 || floorposition[0] - 2.0f > 0.05f && end == 0){
+      if(position[0] < 0.0f && rightend == 1){
+         rightend = 0;
+	 glm_translate_x(model, -position[0]);
+      }
+      if(floorposition[0] + 2.0f < -0.05f && leftend == 0 || floorposition[0] - 2.0f > 0.05f && rightend == 0){
          falling = 1;
       }
-      if(position[0] + 0.05f < -0.5f && end == 1 || position[0] - 0.1f > 0.5f && end == 1){
+      if(position[0] + 0.05f < -0.5f && leftend == 1 || position[0] - 0.05f > 0.5f && rightend == 1){
          falling = 1;
       }
       if(falling == 1){
          glm_translate_y(model, -1.0f * deltatime);
+	 //glUniform1i(tex0uni, 0);
       }
       /*
       if(rotateleft == 1){
@@ -381,23 +416,38 @@ int main(int argc, char *argv[]){
       }
       if(position[1] - 0.5f < -1.0f){
          reset = 1;
-      }else{
-         reset = 0;
       }
       if(reset == 1){
          glm_mat4_identity(model);
 	 glm_mat4_identity(floormodel);
+	 glm_mat4_identity(cloudmodel);
 	 jump = 0;
 	 jumpacceleration = 1.0f;
 	 falling = 0;
-	 end = 0;
-      } 
+	 leftend = 0;
+	 rightend = 0;
+	 reset = 0;
+      }
       glUniformMatrix4fv(modelloc, 1, GL_FALSE, &model[0][0]);
       glBufferData(GL_ARRAY_BUFFER, sizeof(Vertices), Vertices, GL_STATIC_DRAW);
       glDrawElements(GL_TRIANGLES, sizeof(indices)/sizeof(int), GL_UNSIGNED_INT, 0);
       glUniformMatrix4fv(modelloc, 1, GL_FALSE, &floormodel[0][0]);
       glBufferData(GL_ARRAY_BUFFER, sizeof(floor), floor, GL_STATIC_DRAW);
       glDrawElements(GL_TRIANGLES, sizeof(indices)/sizeof(int), GL_UNSIGNED_INT, 0);
+      glUniform1i(tex0uni, 4);
+      glm_translate_x(cloudmodel, -1.2f);
+      glUniformMatrix4fv(modelloc, 1, GL_FALSE, &cloudmodel[0][0]);
+      glBufferData(GL_ARRAY_BUFFER, sizeof(cloud), cloud, GL_STATIC_DRAW);
+      glDrawElements(GL_TRIANGLES, sizeof(indices)/sizeof(int), GL_UNSIGNED_INT, 0);
+      glm_translate_x(cloudmodel, 1.2f);
+      glUniformMatrix4fv(modelloc, 1, GL_FALSE, &cloudmodel[0][0]);
+      glBufferData(GL_ARRAY_BUFFER, sizeof(cloud), cloud, GL_STATIC_DRAW);
+      glDrawElements(GL_TRIANGLES, sizeof(indices)/sizeof(int), GL_UNSIGNED_INT, 0);
+      glm_translate_x(cloudmodel, 1.2f);
+      glUniformMatrix4fv(modelloc, 1, GL_FALSE, &cloudmodel[0][0]);
+      glBufferData(GL_ARRAY_BUFFER, sizeof(cloud), cloud, GL_STATIC_DRAW);
+      glDrawElements(GL_TRIANGLES, sizeof(indices)/sizeof(int), GL_UNSIGNED_INT, 0);
+      glm_translate_x(cloudmodel, -1.2f);
       if((err = glGetError()) != GL_NO_ERROR){
          printf("OpenGL error: %d\n", err);
       }
