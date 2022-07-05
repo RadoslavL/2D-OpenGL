@@ -221,7 +221,7 @@ int main(int argc, char *argv[]){
    int texwidth, texheight, texnum, tex2width, tex2height, tex2num, tex3width, tex3height, tex3num, tex4width, tex4height, tex4num, tex5width, tex5height, tex5num;
    stbi_set_flip_vertically_on_load(true);
    unsigned char* bytes = stbi_load("idle2.png", &texwidth, &texheight, &texnum, 0);
-   unsigned char* bytes2 = stbi_load("grass.jpg", &tex2width, &tex2height, &tex2num, 0);
+   unsigned char* bytes2 = stbi_load("grass2.png", &tex2width, &tex2height, &tex2num, 0);
    unsigned char* bytes3 = stbi_load("moving_left2.png", &tex3width, &tex3height, &tex3num, 0);
    unsigned char* bytes4 = stbi_load("moving_right2.png", &tex4width, &tex4height, &tex4num, 0);
    unsigned char* bytes5 = stbi_load("cloud2.png", &tex5width, &tex5height, &tex5num, 0);
@@ -247,7 +247,7 @@ int main(int argc, char *argv[]){
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, flatcolor);
-   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tex2width, tex2height, 0, GL_RGB, GL_UNSIGNED_BYTE, bytes2);
+   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tex2width, tex2height, 0, GL_RGBA, GL_UNSIGNED_BYTE, bytes2);
    glGenerateMipmap(GL_TEXTURE_2D);
    glActiveTexture(GL_TEXTURE2);
    glBindTexture(GL_TEXTURE_2D, texture[2]);
@@ -401,7 +401,7 @@ int main(int argc, char *argv[]){
       glm_quat_rotate(model, rotation, model);
       angle = glm_rad(0.0f);
       */
-      if(jumppressed == 1){
+      if(jumppressed == 1 && jump == 0){
          jump = 1;
       }
       if(jump == 1 && falling == 0){
@@ -431,6 +431,7 @@ int main(int argc, char *argv[]){
       glUniformMatrix4fv(modelloc, 1, GL_FALSE, &model[0][0]);
       glBufferData(GL_ARRAY_BUFFER, sizeof(Vertices), Vertices, GL_STATIC_DRAW);
       glDrawElements(GL_TRIANGLES, sizeof(indices)/sizeof(int), GL_UNSIGNED_INT, 0);
+      glUniform1i(tex0uni, 1);
       glUniformMatrix4fv(modelloc, 1, GL_FALSE, &floormodel[0][0]);
       glBufferData(GL_ARRAY_BUFFER, sizeof(floor), floor, GL_STATIC_DRAW);
       glDrawElements(GL_TRIANGLES, sizeof(indices)/sizeof(int), GL_UNSIGNED_INT, 0);
@@ -485,5 +486,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
       jumppressed = 1;
    }else if(key == GLFW_KEY_SPACE && action == GLFW_RELEASE){
       jumppressed = 0;
+   }else if(key == GLFW_KEY_F && action == GLFW_PRESS){
+      reset = 1;
    }
 }
